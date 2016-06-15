@@ -81,17 +81,17 @@ function proceed(file) {
   var final_name = file.substr(0, file.length - 4) + '__'
     + moment().subtract(1, durationLegend[INTERVAL_UNIT]).format(DATE_FORMAT) + '.log';
 
-	var readStream = fs.createReadStream(file);
-	var writeStream = fs.createWriteStream(final_name, {'flags': 'a'});
-	readStream.pipe(writeStream);
-	readStream.on('end', function() {
-		fs.truncateSync(file, 0);
-		console.log('"' + final_name + '" has been created');
+    var readStream = fs.createReadStream(file);
+    var writeStream = fs.createWriteStream(final_name, {'flags': 'a'});
+    readStream.pipe(writeStream);
+    readStream.on('end', function() {
+        fs.truncateSync(file, 0);
+        console.log('"' + final_name + '" has been created');
 
-		if (RETAIN !== undefined) {
-			delete_old(file);
-		}
-	});
+        if (RETAIN !== undefined) {
+            delete_old(file);
+        }
+    });
 }
 
 function proceed_file(file, force) {
