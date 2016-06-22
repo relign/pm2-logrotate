@@ -191,9 +191,10 @@ pm2.connect(function(err) {
       */
 
       // add no-need-cut app
+      var force = is_it_time_yet();
       apps.forEach(function(app) {
         if (WHITE_LIST.indexOf(app.name) > -1) return;
-        proceed_app(app, is_it_time_yet() ? true: false)
+        proceed_app(app, force);
       });
     });
   };
