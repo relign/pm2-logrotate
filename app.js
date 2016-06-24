@@ -43,6 +43,8 @@ var durationLegend = {
 
 var gl_file_list = [];
 
+var processing_files = {};
+
 function get_limit_size() {
   if (conf.max_size == '')
     return (1024 * 1024 * 10);
@@ -82,6 +84,12 @@ function proceed(file) {
   var final_name = file.substr(0, file.length - 4) + '__'
     + moment().subtract(1, durationLegend[INTERVAL_UNIT]).format(DATE_FORMAT) + '.log';
 
+    if (processing_files[file]) {
+      return;
+    }
+
+    processing_files[file] = true;
+
     function pipeNew(final_name) {
         // if log-file is big, pipe duration will longer than interval-time
         var readStream = fs.createReadStream(file);
@@ -94,6 +102,11 @@ function proceed(file) {
             if (RETAIN !== undefined) {
                 delete_old(file);
             }
+        });
+
+        writeStream.on('finish', function () {
+          processing_files[file] = false;
+          delete processing_files[file];
         });
     }
 
