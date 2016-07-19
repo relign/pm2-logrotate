@@ -31,7 +31,7 @@ var SIZE_LIMIT = get_limit_size(); // 10MB
 var INTERVAL_UNIT = conf.interval_unit || 'DD'; // MM = months, DD = days, mm = minutes
 var INTERVAL = parseInt(conf.interval) || 1; // INTERVAL:1 day
 var RETAIN = isNaN(parseInt(conf.retain))? undefined: parseInt(conf.retain); // All
-var WHITE_LIST = conf.white_list || [''];
+var WHITE_LIST = conf.white_list || '';
 
 var NOW = parseInt(moment().format(INTERVAL_UNIT));
 var DATE_FORMAT = 'YYYY-MM-DD-HH-mm';
@@ -62,6 +62,7 @@ function get_limit_size() {
 function delete_old(file) {
   var fileBaseName = file.substr(0, file.length - 4) + '__';
   var readPath = path.join(path.dirname(fileBaseName), "/");
+  var retainFile = fileBaseName + moment().subtract(1 + RETAIN, durationLegend[INTERVAL_UNIT]).format(DATE_FORMAT) + '.log';
 
   fs.readdir(readPath, function(err, files) {
     var rotated_files = []
@@ -73,7 +74,7 @@ function delete_old(file) {
     rotated_files.sort().reverse();
 
     for (var i = rotated_files.length - 1; i >= 0; i--) {
-      if (RETAIN > i) { break; }
+      if (rotated_files[i] > retainFile) { break; }
       fs.unlink(rotated_files[i]);
       console.log('"' + rotated_files[i] + '" has been deleted');
     };
@@ -84,12 +85,11 @@ function proceed(file) {
   var final_name = file.substr(0, file.length - 4) + '__'
     + moment().subtract(1, durationLegend[INTERVAL_UNIT]).format(DATE_FORMAT) + '.log';
 
+    /*
     if (processing_files[file]) {
       return;
     }
-
     processing_files[file] = true;
-
     function pipeNew(final_name) {
         // if log-file is big, pipe duration will longer than interval-time
         var readStream = fs.createReadStream(file);
@@ -98,17 +98,16 @@ function proceed(file) {
         readStream.on('end', function() {
             fs.truncateSync(file, 0);
             console.log('"' + final_name + '" has been created');
-
             if (RETAIN !== undefined) {
                 delete_old(file);
             }
         });
-
         writeStream.on('finish', function () {
           processing_files[file] = false;
           delete processing_files[file];
         });
     }
+    */
 
     //app-pid__2016-06-16-14-44
     var fileName = final_name.slice(final_name.lastIndexOf('/') + 1, final_name.length).replace('.log', '');
@@ -133,20 +132,20 @@ function proceed(file) {
             final_name = path + '/' + fileName + '__' + (versions[0] + 1) + '.log';
         }
 
-        pipeNew(final_name);
+        backLogFile(file, final_name);
     });
 
-    /*
-    fs.rename(file, final_name, function() {
-        fs.writeFile(file, '', 'utf8', function() {
-            pm2.flush()
+    function backLogFile(file, final_name) {
+        fs.rename(file, final_name, function() {
+            pm2.reloadLogs(function(e, msg) {
+                console.log(e, msg);
+            });
             console.log('"' + final_name + '" has been created');
             if (RETAIN !== undefined) {
                 delete_old(file);
             }
-        })
-    });
-    */
+        });
+    }
 }
 
 function proceed_file(file, force) {
@@ -195,13 +194,6 @@ pm2.connect(function(err) {
 
       proceed_file(process.env.HOME + '/.pm2/pm2.log', false);
       proceed_file(process.env.HOME + '/.pm2/agent.log', false);
-
-      /*
-      if (is_it_time_yet())
-        apps.forEach(function(app) {proceed_app(app, true)});
-      else
-        apps.forEach(function(app) {proceed_app(app, false)});
-      */
 
       // add no-need-cut app
       var force = is_it_time_yet();
