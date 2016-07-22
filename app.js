@@ -81,7 +81,7 @@ function delete_old(file) {
   });
 }
 
-function proceed(file) {
+function proceed(file, force) {
   var final_name = file.substr(0, file.length - 4) + '__'
     + moment().subtract(force ? 1 : 0, 'm').format(DATE_FORMAT) + '.log';
 
